@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <!-- Title -->
+  <text x="600" y="35" font-size="26" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    LinguaFlow - Core Use Case Diagram
+  </text>
+  
+  <!-- System Boundary -->
+  <rect x="300" y="80" width="700" height="600" fill="none" stroke="#3498db" stroke-width="4" rx="12"/>
+  <text x="650" y="115" font-size="20" font-weight="bold" text-anchor="middle" fill="#3498db">
+    LinguaFlow Platform
+  </text>
+  
+  <!-- PRIMARY ACTOR -->
+  
+  <!-- Individual Learner -->
+  <g id="individual-learner">
+    <ellipse cx="150" cy="350" rx="100" ry="50" fill="#e8f4f8" stroke="#2980b9" stroke-width="3"/>
+    <text x="150" y="340" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Individual</text>
+    <text x="150" y="365" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Learner</text>
+  </g>
+  
+  <!-- SECONDARY ACTORS -->
+  
+  <!-- AI Conversation Engine -->
+  <g id="ai-engine">
+    <ellipse cx="1050" cy="250" rx="100" ry="50" fill="#f4ecf7" stroke="#8e44ad" stroke-width="3"/>
+    <text x="1050" y="240" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">AI Conversation</text>
+    <text x="1050" y="260" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">Engine</text>
+  </g>
+  
+  <!-- Speech Recognition/Synthesis Service -->
+  <g id="speech-service">
+    <ellipse cx="1050" cy="400" rx="100" ry="50" fill="#fef5e7" stroke="#f39c12" stroke-width="3"/>
+    <text x="1050" y="390" font-size="13" font-weight="bold" text-anchor="middle" fill="#2c3e50">Speech Recognition</text>
+    <text x="1050" y="405" font-size="13" font-weight="bold" text-anchor="middle" fill="#2c3e50">& Synthesis</text>
+    <text x="1050" y="420" font-size="13" font-weight="bold" text-anchor="middle" fill="#2c3e50">Service</text>
+  </g>
+  
+  <!-- System Administrator -->
+  <g id="system-admin">
+    <ellipse cx="1050" cy="550" rx="100" ry="50" fill="#fef9e7" stroke="#e67e22" stroke-width="3"/>
+    <text x="1050" y="545" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">System</text>
+    <text x="1050" y="565" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">Administrator</text>
+  </g>
+  
+  <!-- USE CASES -->
+  
+  <!-- UC1: Register and Create Profile -->
+  <ellipse cx="500" cy="200" rx="120" ry="40" fill="#fff9e6" stroke="#34495e" stroke-width="2"/>
+  <text x="500" y="198" font-size="13" font-weight="600" text-anchor="middle">Register and</text>
+  <text x="500" y="215" font-size="13" font-weight="600" text-anchor="middle">Create Profile</text>
+  
+  <!-- UC2: Engage in AI Conversation -->
+  <ellipse cx="650" cy="280" rx="120" ry="40" fill="#e8f8f5" stroke="#34495e" stroke-width="2"/>
+  <text x="650" y="278" font-size="13" font-weight="600" text-anchor="middle">Engage in AI</text>
+  <text x="650" y="295" font-size="13" font-weight="600" text-anchor="middle">Conversation</text>
+  
+  <!-- UC3: Complete Adaptive Lessons -->
+  <ellipse cx="500" cy="360" rx="120" ry="40" fill="#fef5e7" stroke="#34495e" stroke-width="2"/>
+  <text x="500" y="358" font-size="13" font-weight="600" text-anchor="middle">Complete Adaptive</text>
+  <text x="500" y="375" font-size="13" font-weight="600" text-anchor="middle">Lessons</text>
+  
+  <!-- UC4: Track Progress -->
+  <ellipse cx="650" cy="440" rx="120" ry="40" fill="#ebf5fb" stroke="#34495e" stroke-width="2"/>
+  <text x="650" y="448" font-size="13" font-weight="600" text-anchor="middle">Track Progress</text>
+  
+  <!-- UC5: Earn Achievements and Maintain Streaks -->
+  <ellipse cx="500" cy="520" rx="140" ry="40" fill="#fce4ec" stroke="#34495e" stroke-width="2"/>
+  <text x="500" y="518" font-size="13" font-weight="600" text-anchor="middle">Earn Achievements and</text>
+  <text x="500" y="535" font-size="13" font-weight="600" text-anchor="middle">Maintain Streaks</text>
+  
+  <!-- CONNECTIONS - Individual Learner to Use Cases -->
+  <line x1="250" y1="350" x2="380" y2="200" stroke="#2980b9" stroke-width="2.5"/>
+  <line x1="250" y1="350" x2="530" y2="280" stroke="#2980b9" stroke-width="2.5"/>
+  <line x1="250" y1="350" x2="380" y2="360" stroke="#2980b9" stroke-width="2.5"/>
+  <line x1="250" y1="350" x2="530" y2="440" stroke="#2980b9" stroke-width="2.5"/>
+  <line x1="250" y1="360" x2="360" y2="520" stroke="#2980b9" stroke-width="2.5"/>
+  
+  <!-- CONNECTIONS - Secondary Actors to Use Cases (dashed) -->
+  
+  <!-- AI Engine to Engage in AI Conversation -->
+  <line x1="950" y1="250" x2="770" y2="280" stroke="#8e44ad" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <text x="860" y="260" font-size="11" fill="#8e44ad" font-style="italic">«uses»</text>
+  
+  <!-- AI Engine to Complete Adaptive Lessons -->
+  <line x1="950" y1="260" x2="620" y2="360" stroke="#8e44ad" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <text x="780" y="305" font-size="11" fill="#8e44ad" font-style="italic">«uses»</text>
+  
+  <!-- Speech Service to Engage in AI Conversation -->
+  <line x1="950" y1="380" x2="770" y2="300" stroke="#f39c12" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <text x="860" y="335" font-size="11" fill="#f39c12" font-style="italic">«uses»</text>
+  
+  <!-- System Admin to Track Progress -->
+  <line x1="950" y1="540" x2="770" y2="450" stroke="#e67e22" stroke-width="2.5"/>
+  <text x="860" y="490" font-size="11" fill="#e67e22" font-style="italic">«monitors»</text>
+  
+  <!-- System Admin to Register and Create Profile -->
+  <line x1="950" y1="530" x2="620" y2="210" stroke="#e67e22" stroke-width="2.5"/>
+  <text x="780" y="360" font-size="11" fill="#e67e22" font-style="italic">«manages»</text>
+  
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="320" y="700" width="560" height="80" fill="white" stroke="#95a5a6" stroke-width="2" rx="8"/>
+    <text x="335" y="725" font-size="14" font-weight="bold" fill="#2c3e50">Legend:</text>
+    
+    <!-- Primary Actor Line -->
+    <line x1="335" y1="740" x2="390" y2="740" stroke="#2980b9" stroke-width="3"/>
+    <text x="400" y="745" font-size="12" fill="#34495e">Primary Actor ──→ Use Case (direct interaction)</text>
+    
+    <!-- Secondary Actor Line -->
+    <line x1="335" y1="765" x2="390" y2="765" stroke="#8e44ad" stroke-width="3" stroke-dasharray="8,4"/>
+    <text x="400" y="770" font-size="12" fill="#34495e">Secondary Actor ⟷ Use Case (supporting interaction)</text>
+  </g>
+  
+  <!-- Actor Type Legend -->
+  <g id="actor-type-legend">
+    <rect x="50" y="550" width="200" height="110" fill="white" stroke="#95a5a6" stroke-width="2" rx="8"/>
+    <text x="65" y="575" font-size="14" font-weight="bold" fill="#2c3e50">Actor Types:</text>
+    
+    <!-- Primary -->
+    <ellipse cx="95" cy="605" rx="20" ry="12" fill="#e8f4f8" stroke="#2980b9" stroke-width="2"/>
+    <text x="125" y="610" font-size="12" fill="#34495e">Primary Actor</text>
+    
+    <!-- Secondary -->
+    <ellipse cx="95" cy="640" rx="20" ry="12" fill="#f4ecf7" stroke="#8e44ad" stroke-width="2"/>
+    <text x="125" y="645" font-size="12" fill="#34495e">Secondary Actor</text>
+  </g>
+  
+  <!-- Note about relationships -->
+  <g id="relationships-note">
+    <text x="335" y="155" font-size="11" font-style="italic" fill="#7f8c8d">
+      Note: The AI Conversation Engine and Speech Service support conversational features.
+    </text>
+    <text x="335" y="170" font-size="11" font-style="italic" fill="#7f8c8d">
+      System Administrator manages user accounts and monitors system operations.
+    </text>
+  </g>
+</svg>
