@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Parakeet — Software Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@400;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans',Arial,sans-serif;
+  background:#ffffff;
+  color:#111;
+  min-width:1300px;
+}
+#page{
+  padding:36px 48px 56px;
+  background:#fff;
+}
+
+/* Header */
+.hdr{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:32px;
+  padding-bottom:18px;
+  border-bottom:2px solid #e8e8e8;
+}
+.hdr-logo{
+  width:40px;height:40px;border-radius:8px;
+  background:linear-gradient(135deg,#1a73e8,#0d47a1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;
+}
+.hdr-title{font-size:1.15rem;font-weight:700;color:#111;letter-spacing:.01em}
+.hdr-sub{font-size:.72rem;color:#666;margin-top:2px}
+
+/* Diagram canvas */
+#diagram{
+  position:relative;
+  background:#fff;
+  margin:0 auto;
+}
+svg#svg-lines{
+  position:absolute;top:0;left:0;
+  pointer-events:none;overflow:visible;
+}
+
+/* Zone groupings — dashed border like reference */
+.zone{
+  position:absolute;
+  border:1.5px dashed;
+  border-radius:6px;
+  background:transparent;
+}
+.zone-lbl{
+  position:absolute;
+  top:-11px;right:10px;
+  font-size:.58rem;font-weight:700;letter-spacing:.08em;
+  padding:1px 8px;border-radius:3px;
+  white-space:nowrap;
+  writing-mode:horizontal-tb;
+}
+.zone-lbl-side{
+  position:absolute;
+  right:-11px;top:50%;
+  transform:translateY(-50%) rotate(90deg);
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;
+  padding:1px 8px;border-radius:3px;
+  white-space:nowrap;
+  transform-origin:right center;
+}
+
+/* Node: icon tile + label below, like reference */
+.node{
+  position:absolute;
+  display:flex;flex-direction:column;align-items:center;
+  gap:6px;
+  cursor:default;
+}
+.node-tile{
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;
+  transition:transform .15s, box-shadow .15s;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  flex-shrink:0;
+}
+.node:hover .node-tile{
+  transform:translateY(-2px);
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
+}
+.node-name{
+  font-size:.58rem;font-weight:700;color:#111;
+  text-align:center;line-height:1.3;
+  max-width:90px;
+}
+.node-tech{
+  font-size:.48rem;color:#666;
+  text-align:center;line-height:1.3;
+  max-width:90px;margin-top:-3px;
+}
+
+/* Tooltip */
+.tip{
+  display:none;position:fixed;z-index:9999;
+  background:#fff;border:1px solid #ccc;
+  border-radius:6px;padding:8px 12px;
+  font-size:.52rem;color:#333;max-width:220px;
+  pointer-events:none;line-height:1.65;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+
+/* Legend */
+.legend{
+  display:flex;flex-wrap:wrap;gap:16px;
+  margin-top:24px;padding-top:16px;
+  border-top:1px solid #eee;
+  align-items:center;
+}
+.leg{display:flex;align-items:center;gap:6px;font-size:.56rem;color:#444}
+.leg-tile{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="page">
+  <div class="hdr">
+    <div class="hdr-logo">🦜</div>
+    <div>
+      <div class="hdr-title">Parakeet — Software Architecture</div>
+      <div class="hdr-sub">AI-Powered Conversational Language Learning Platform · React.js + Node.js + OpenAI</div>
+    </div>
+  </div>
+
+  <div id="diagram"></div>
+
+  <div class="legend" id="legend"></div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// DESIGN CONSTANTS  (reference diagram style: white bg, coloured tiles)
+// ─────────────────────────────────────────────────────────────
+const TW = 64;   // tile width/height
+const NW = 90;   // total node width (for layout centering)
+const NH = TW + 28; // tile + label area
+
+// Tile colours per layer (bold fills like the reference)
+const COLORS = {
+  actors:   '#546e7a',
+  frontend: '#1565c0',
+  gateway:  '#6a1b9a',
+  backend:  '#2e7d32',
+  ai:       '#c62828',
+  data:     '#f57f17',
+  infra:    '#00695c',
+};
+
+// Zone border colours
+const ZONE_COLORS = {
+  frontend: '#1565c0',
+  gateway:  '#6a1b9a',
+  backend:  '#2e7d32',
+  ai:       '#c62828',
+  data:     '#f57f17',
+  infra:    '#00695c',
+};
+
+// ─────────────────────────────────────────────────────────────
+// NODE DEFINITIONS  — absolute (x,y) positions on canvas
+// x,y = centre of tile
+// ─────────────────────────────────────────────────────────────
+// Canvas: 1360 wide × ~900 tall
+const CW = 1360;
+
+// Row Y centres for tiles (accounting for label below)
+const R = {
+  actors:   80,
+  frontend: 220,
+  gateway:  370,
+  backend:  530,
+  ai:       690,
+  data:     690,
+  infra:    840,
+};
+
+// We distribute frontend (7 nodes) evenly across width
+// Gateway (4), Backend (6), etc.
+function spreadX(count, totalW, margin) {
+  const slot = (totalW - margin*2) / count;
+  return Array.from({length:count}, (_,i) => margin + slot*i + slot/2);
+}
+
+const FX = spreadX(7, CW, 60);   // frontend x positions
+const GX = spreadX(4, CW, 200);  // gateway
+const BX = spreadX(6, CW, 80);   // backend
+// AI: 3 nodes left half, Data: 2 nodes right half
+const AIX = [200, 440, 680];
+const DX  = [920, 1160];
+const IX  = [560, 820]; // infra 2 nodes centre
+
+const nodes = {
+  // ACTORS
+  learner:   {x:340,  y:R.actors, icon:'👤', name:'Individual\nLearner',  tech:'Web Browser / PWA', layer:'actors', tip:'Primary user. Engages in AI conversation, lessons, voice mode, and progress tracking.'},
+  corporate: {x:680,  y:R.actors, icon:'🏢', name:'Corporate\nClient',    tech:'B2B Portal',         layer:'actors', tip:'Business clients. Manage bulk learners, view team dashboards, seat-based access.'},
+  admin:     {x:1020, y:R.actors, icon:'🛡️', name:'System\nAdmin',        tech:'Admin Dashboard',    layer:'actors', tip:'Internal staff. Monitors platform health, AI latency, system uptime, manages users.'},
+
+  // FRONTEND
+  authui:    {x:FX[0], y:R.frontend, icon:'🔐', name:'Auth /\nOnboarding',    tech:'Login · Lang Select',    layer:'frontend', tip:'Login, registration, language selection, initial proficiency assessment.'},
+  dashboard: {x:FX[1], y:R.frontend, icon:'📊', name:'Learner\nDashboard',    tech:'Progress · Streaks',     layer:'frontend', tip:'Central hub: fluency scores, streak counter, AI lesson recommendations, recent conversations.'},
+  chatui:    {x:FX[2], y:R.frontend, icon:'💬', name:'AI Chat\nInterface',    tech:'Conversation',           layer:'frontend', tip:'Real-time AI conversation UI. Inline grammar correction overlay, scenario selector.'},
+  voiceui:   {x:FX[3], y:R.frontend, icon:'🎙️', name:'Voice\nMode',          tech:'Mic · Pronunciation',    layer:'frontend', tip:'Microphone input, waveform visualizer, pronunciation feedback display.'},
+  lessonui:  {x:FX[4], y:R.frontend, icon:'📚', name:'Lesson\nModules',       tech:'Quizzes · SRS',          layer:'frontend', tip:'Structured lessons, interactive exercises, AI-generated quizzes, spaced-repetition cards.'},
+  gameui:    {x:FX[5], y:R.frontend, icon:'🏆', name:'Gamification\nHub',     tech:'Badges · Leaderboard',   layer:'frontend', tip:'Points, badge gallery, daily streak tracker, global leaderboard, tier unlocks.'},
+  adminui:   {x:FX[6], y:R.frontend, icon:'⚙️', name:'Admin\nConsole',        tech:'Monitoring',             layer:'frontend', tip:'System health graphs, AI latency metrics, error logs, user management panel.'},
+
+  // GATEWAY
+  apigw:     {x:GX[0], y:R.gateway, icon:'🔀', name:'API\nGateway',          tech:'Amazon API Gateway',     layer:'gateway', tip:'Single entry point. Rate limiting, JWT validation, request routing, CORS.'},
+  graphql:   {x:GX[1], y:R.gateway, icon:'◈',  name:'GraphQL\nAPI',          tech:'Queries · Subscriptions',layer:'gateway', tip:'Unified GraphQL schema. All queries, mutations, and real-time subscriptions.'},
+  wsserver:  {x:GX[2], y:R.gateway, icon:'⚡', name:'WebSocket\nServer',     tech:'Live Chat · Streaming',  layer:'gateway', tip:'Persistent WebSocket connections for streaming AI chat tokens and live corrections.'},
+  cdn:       {x:GX[3], y:R.gateway, icon:'🌐', name:'CloudFront\nCDN',       tech:'Edge Cache',             layer:'gateway', tip:'AWS CloudFront. Serves static React build and assets from global edge locations.'},
+
+  // BACKEND
+  authsvc:   {x:BX[0], y:R.backend, icon:'🔑', name:'Auth\nService',         tech:'JWT · Sessions',         layer:'backend', tip:'Issues JWT tokens, manages session lifecycle, handles login/logout flows.'},
+  usersvc:   {x:BX[1], y:R.backend, icon:'👥', name:'User\nService',         tech:'Profiles · CEFR',        layer:'backend', tip:'User profiles, language preferences, CEFR level tracking, learning history.'},
+  aisvc:     {x:BX[2], y:R.backend, icon:'🤖', name:'AI\nOrchestrator',      tech:'Prompt Eng · Context',   layer:'backend', tip:'Core AI: prompt construction, context window management, CEFR scoring, error extraction.'},
+  curriculum:{x:BX[3], y:R.backend, icon:'🧩', name:'Curriculum\nService',   tech:'Adaptive · SRS · Quiz',  layer:'backend', tip:'Personalised learning paths, spaced-repetition scheduling, AI quiz generation.'},
+  gamesvc:   {x:BX[4], y:R.backend, icon:'🎮', name:'Gamification\nService', tech:'XP · Badges · Streaks',  layer:'backend', tip:'Awards XP, unlocks badges, updates streak counters, computes leaderboard rankings.'},
+  analytics: {x:BX[5], y:R.backend, icon:'📈', name:'Analytics\nService',    tech:'Fluency · Errors',       layer:'backend', tip:'Computes fluency scores, vocabulary growth, grammar accuracy, conversation error logs.'},
+
+  // AI ENGINE
+  gpt4:      {x:AIX[0], y:R.ai, icon:'✨', name:'OpenAI\nGPT-4',            tech:'Conversational AI',      layer:'ai', tip:'Powers real-time multi-turn conversation, grammar correction, scenario roleplay.'},
+  finetune:  {x:AIX[1], y:R.ai, icon:'🧠', name:'Fine-tuned\nLLM',          tech:'CEFR-Aligned · 12 Langs',layer:'ai', tip:'Domain fine-tuned on curated language-learning dialogues. CEFR A1–C2 aligned.'},
+  whisper:   {x:AIX[2], y:R.ai, icon:'🎤', name:'Whisper\nSTT',             tech:'Speech-to-Text',         layer:'ai', tip:'OpenAI Whisper. Transcribes learner voice input for AI Orchestrator processing.'},
+
+  // DATA LAYER
+  postgres:  {x:DX[0],  y:R.data, icon:'🗄️', name:'PostgreSQL',             tech:'Users · Progress · Sessions', layer:'data', tip:'Primary datastore. All relational data: users, progress records, conversation sessions.'},
+  redis:     {x:DX[1],  y:R.data, icon:'⚡', name:'Redis',                  tech:'Cache · Leaderboard',    layer:'data', tip:'Session cache, rate-limit counters, leaderboard scores, conversation context cache.'},
+
+  // CLOUD INFRA
+  eks:        {x:IX[0],  y:R.infra, icon:'🐳', name:'AWS\nEKS',              tech:'Kubernetes · All Services',layer:'infra', tip:'AWS EKS Kubernetes cluster. Hosts and auto-scales all backend microservice containers.'},
+  cloudwatch: {x:IX[1],  y:R.infra, icon:'📡', name:'CloudWatch',            tech:'Uptime · Latency · Alerts',layer:'infra', tip:'Monitors system uptime, AI inference latency, error rates, resource utilisation.'},
+};
+
+// ─────────────────────────────────────────────────────────────
+// CONNECTIONS  [from, to, label]
+// ─────────────────────────────────────────────────────────────
+const conns = [
+  // Actors → Frontend
+  ['learner',   'authui',    ''],
+  ['learner',   'chatui',    ''],
+  ['learner',   'voiceui',   ''],
+  ['learner',   'dashboard', ''],
+  ['learner',   'lessonui',  ''],
+  ['corporate', 'authui',    ''],
+  ['admin',     'adminui',   ''],
+
+  // Frontend → Gateway
+  ['authui',    'apigw',    'HTTPS'],
+  ['chatui',    'wsserver', 'WebSocket'],
+  ['voiceui',   'apigw',    'Audio Upload'],
+  ['dashboard', 'graphql',  'GraphQL'],
+  ['lessonui',  'graphql',  'GraphQL'],
+  ['gameui',    'graphql',  'GraphQL'],
+  ['adminui',   'apigw',    'HTTPS'],
+
+  // Gateway → Backend
+  ['apigw',    'authsvc',   ''],
+  ['graphql',  'usersvc',   ''],
+  ['graphql',  'aisvc',     ''],
+  ['wsserver', 'aisvc',     'Stream'],
+  ['graphql',  'curriculum',''],
+  ['graphql',  'gamesvc',   ''],
+  ['graphql',  'analytics', ''],
+
+  // Backend → AI
+  ['aisvc', 'gpt4',     'API Call'],
+  ['aisvc', 'finetune', 'Inference'],
+  ['aisvc', 'whisper',  'STT'],
+
+  // Backend → Data
+  ['authsvc',    'postgres', ''],
+  ['usersvc',    'postgres', ''],
+  ['aisvc',      'redis',    'Cache'],
+  ['curriculum', 'postgres', ''],
+  ['gamesvc',    'redis',    ''],
+  ['analytics',  'postgres', ''],
+
+  // Backend → Infra
+  ['analytics', 'cloudwatch', 'Metrics'],
+  ['aisvc',     'eks',        'Hosted on'],
+];
+
+// ─────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────
+const CH = 980;
+const diagramEl = document.getElementById('diagram');
+diagramEl.style.width  = CW + 'px';
+diagramEl.style.height = CH + 'px';
+diagramEl.style.position = 'relative';
+
+// SVG overlay
+const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+svg.id = 'svg-lines';
+svg.setAttribute('width', CW);
+svg.setAttribute('height', CH);
+svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
+
+// Arrow markers
+const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+// One shared grey arrowhead (like reference diagram)
+['grey','blue','purple','green','red','orange','teal'].forEach((id,i) => {
+  const fills = ['#888','#1565c0','#6a1b9a','#2e7d32','#c62828','#f57f17','#00695c'];
+  const m = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  m.setAttribute('id','arr-'+id);
+  m.setAttribute('markerWidth','8');m.setAttribute('markerHeight','8');
+  m.setAttribute('refX','7');m.setAttribute('refY','4');
+  m.setAttribute('orient','auto');
+  const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  p.setAttribute('points','0,0 8,4 0,8');
+  p.setAttribute('fill', fills[i]);
+  m.appendChild(p); defs.appendChild(m);
+});
+svg.appendChild(defs);
+diagramEl.appendChild(svg);
+
+// Zone rectangles (dashed outlines)
+const zones = [
+  {id:'frontend-zone', x:40,   y:175, w:CW-80, h:120, color:'#1565c0', label:'Frontend Layer'},
+  {id:'gateway-zone',  x:120,  y:325, w:CW-240,h:120, color:'#6a1b9a', label:'API Gateway & Middleware'},
+  {id:'backend-zone',  x:40,   y:478, w:CW-80, h:122, color:'#2e7d32', label:'Backend Services'},
+  {id:'ai-zone',       x:40,   y:630, w:780,   h:120, color:'#c62828', label:'AI Engine'},
+  {id:'data-zone',     x:850,  y:630, w:470,   h:120, color:'#f57f17', label:'Data Layer'},
+  {id:'infra-zone',    x:360,  y:785, w:660,   h:120, color:'#00695c', label:'Cloud Infrastructure — AWS'},
+];
+
+zones.forEach(z => {
+  const div = document.createElement('div');
+  div.className = 'zone';
+  div.style.cssText = `left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px;border-color:${z.color}55`;
+  const lbl = document.createElement('div');
+  lbl.className = 'zone-lbl';
+  lbl.textContent = z.label;
+  lbl.style.cssText = `color:${z.color};background:#fff;border:1px solid ${z.color}44`;
+  div.appendChild(lbl);
+  diagramEl.appendChild(div);
+});
+
+const tipEl = document.getElementById('tip');
+const layerToMarker = {actors:'grey',frontend:'blue',gateway:'purple',backend:'green',ai:'red',data:'orange',infra:'teal'};
+
+// Draw nodes
+Object.entries(nodes).forEach(([id, n]) => {
+  const col = COLORS[n.layer];
+  const div = document.createElement('div');
+  div.className = 'node';
+  div.id = 'nd-'+id;
+  // Centre the node div at n.x, n.y (tile centre)
+  div.style.cssText = `left:${n.x - NW/2}px;top:${n.y - TW/2}px;width:${NW}px`;
+
+  div.innerHTML = `
+    <div class="node-tile" style="width:${TW}px;height:${TW}px;background:${col}">${n.icon}</div>
+    <div class="node-name">${n.name.replace(/\n/g,'<br>')}</div>
+    <div class="node-tech">${n.tech}</div>
+  `;
+
+  div.addEventListener('mousemove', e => {
+    tipEl.style.display='block';
+    tipEl.textContent=n.tip;
+    tipEl.style.left=(e.clientX+14)+'px';
+    tipEl.style.top=(e.clientY-8)+'px';
+  });
+  div.addEventListener('mouseleave', () => { tipEl.style.display='none'; });
+  diagramEl.appendChild(div);
+});
+
+// Draw connections
+function nodeCentre(id) {
+  const n = nodes[id];
+  return {x: n.x, y: n.y}; // tile centre
+}
+
+function tileEdge(id, side) {
+  const n = nodes[id];
+  const half = TW/2;
+  if (side==='bottom') return {x:n.x, y:n.y+half};
+  if (side==='top')    return {x:n.x, y:n.y-half};
+  if (side==='left')   return {x:n.x-half, y:n.y};
+  if (side==='right')  return {x:n.x+half, y:n.y};
+}
+
+conns.forEach(([fromId, toId, label]) => {
+  const fn = nodes[fromId]; const tn = nodes[toId];
+  if (!fn || !tn) return;
+
+  const fl = fn.layer;
+  const marker = layerToMarker[fl] || 'grey';
+  const strokeCol = COLORS[fl] || '#999';
+
+  // Determine exit/entry sides based on relative Y
+  const dy = tn.y - fn.y;
+  const dx = tn.x - fn.x;
+
+  let x1,y1,x2,y2,cx1,cy1,cx2,cy2;
+
+  if (Math.abs(dy) > Math.abs(dx)*0.6) {
+    // primarily vertical
+    const f = tileEdge(fromId, dy>0?'bottom':'top');
+    const t = tileEdge(toId,   dy>0?'top':'bottom');
+    x1=f.x; y1=f.y; x2=t.x; y2=t.y;
+    const bend = Math.abs(y2-y1)*0.45;
+    cx1=x1; cy1=y1+(dy>0?bend:-bend);
+    cx2=x2; cy2=y2-(dy>0?bend:-bend);
+  } else {
+    // primarily horizontal
+    const f = tileEdge(fromId, dx>0?'right':'left');
+    const t = tileEdge(toId,   dx>0?'left':'right');
+    x1=f.x; y1=f.y; x2=t.x; y2=t.y;
+    const bend = Math.abs(x2-x1)*0.45;
+    cx1=x1+(dx>0?bend:-bend); cy1=y1;
+    cx2=x2-(dx>0?bend:-bend); cy2=y2;
+  }
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',`M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`);
+  path.setAttribute('stroke', strokeCol);
+  path.setAttribute('stroke-width','1.4');
+  path.setAttribute('stroke-opacity','0.45');
+  path.setAttribute('fill','none');
+  path.setAttribute('marker-end',`url(#arr-${marker})`);
+  svg.appendChild(path);
+
+  // Label on connection
+  if (label) {
+    const mx = (x1+x2)/2 + (cx1+cx2)/4 - (x1+x2)/4*0.5;
+    const my = (y1+y2)/2 + (cy1+cy2)/4 - (y1+y2)/4*0.5;
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', (x1+x2)/2);
+    txt.setAttribute('y', (y1+y2)/2 - 5);
+    txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('font-size','9');
+    txt.setAttribute('font-family','Noto Sans,Arial,sans-serif');
+    txt.setAttribute('fill','#888');
+    txt.textContent = label;
+    svg.appendChild(txt);
+  }
+});
+
+// Legend
+const legendEl = document.getElementById('legend');
+const layerLabels = {
+  actors:'Actors', frontend:'Frontend — React.js',
+  gateway:'API Gateway', backend:'Backend Services — Node.js',
+  ai:'AI Engine', data:'Data Layer', infra:'Cloud Infrastructure'
+};
+Object.entries(COLORS).forEach(([layer, col]) => {
+  const item = document.createElement('div');
+  item.className = 'leg';
+  item.innerHTML = `<div class="leg-tile" style="background:${col}"></div>${layerLabels[layer]}`;
+  legendEl.appendChild(item);
+});
+// Line legend
+const lineTypes = [
+  {dash:'none', label:'API / Data Flow'},
+  {dash:'5,3',  label:'User Interaction'},
+];
+lineTypes.forEach(lt => {
+  const item = document.createElement('div');
+  item.className='leg'; item.style.marginLeft='8px';
+  item.innerHTML=`<svg width="28" height="12" style="flex-shrink:0"><line x1="0" y1="6" x2="20" y2="6" stroke="#888" stroke-width="1.5" stroke-dasharray="${lt.dash}"/><polygon points="20,3 27,6 20,9" fill="#888"/></svg>${lt.label}`;
+  legendEl.appendChild(item);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Parakeet — UML Component Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0c0e14;
+    --surface:   #13161f;
+    --surface2:  #1a1e2a;
+    --border:    rgba(255,255,255,0.08);
+    --border2:   rgba(255,255,255,0.14);
+    --text:      #e8eaf2;
+    --muted:     #717694;
+    --accent:    #7c6af7;
+
+    --layer-actors:   #717694;
+    --layer-frontend: #4a8ef5;
+    --layer-gateway:  #9b6bdb;
+    --layer-backend:  #4caf7d;
+    --layer-ai:       #e8534a;
+    --layer-data:     #f0a030;
+    --layer-infra:    #30b8a8;
+
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 32px 64px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4a8ef5, #9b6bdb);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 24px rgba(124,106,247,0.4);
+  }
+
+  .title-block h1 {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .title-block p {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    background: var(--surface);
+    white-space: nowrap;
+    align-self: center;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Layer sections ── */
+  .layer {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .layer:hover {
+    border-color: var(--border2);
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .layer-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .layer-label {
+    font-family: var(--font-head);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .layer-label span {
+    color: var(--text);
+  }
+
+  .layer-stereotype {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-left: auto;
+    opacity: 0.6;
+  }
+
+  .layer-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ── Component cards ── */
+  .comp {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-width: 140px;
+    flex: 1;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .comp::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: currentColor;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+
+  .comp:hover {
+    transform: translateY(-2px);
+    border-color: var(--border2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .comp:hover::before {
+    opacity: 1;
+  }
+
+  .comp-stereotype {
+    font-size: 0.52rem;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    opacity: 0.5;
+  }
+
+  .comp-name {
+    font-family: var(--font-head);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .comp-tech {
+    font-size: 0.58rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* port lollipop indicator */
+  .comp-port {
+    position: absolute;
+    bottom: 8px; right: 10px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    opacity: 0.35;
+  }
+
+  /* ── Actor cards (special) ── */
+  .actor-card {
+    background: var(--bg);
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    flex: 1;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .actor-icon {
+    font-size: 1.6rem;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .actor-name {
+    font-family: var(--font-head);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .actor-tech {
+    font-size: 0.58rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── Connector rows ── */
+  .connector-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    gap: 8px;
+    position: relative;
+  }
+
+  .connector-line {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .conn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .conn-pipe {
+    width: 1px;
+    height: 20px;
+    position: relative;
+  }
+
+  .conn-pipe::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: -3px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid currentColor;
+    opacity: 0.6;
+  }
+
+  .conn-label {
+    font-size: 0.52rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .conn-port {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    background: var(--bg);
+  }
+
+  /* ── Arrows section between layers ── */
+  .flow-bridge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 6px 0 2px;
+    position: relative;
+  }
+
+  .flow-bridge::before {
+    content: '';
+    position: absolute;
+    left: 10%; right: 10%;
+    top: 50%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .flow-tag {
+    font-size: 0.55rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    z-index: 1;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* Two-column grid for AI + Data */
+  .side-by-side {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* ── Dependency arrows viz ── */
+  .deps-svg {
+    width: 100%;
+    overflow: visible;
+    display: block;
+    margin: 8px 0 4px;
+    height: 32px;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    margin-top: 40px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .legend-title {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-family: var(--font-head);
+    font-weight: 600;
+  }
+
+  .legend-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-symbol {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--muted);
+    flex-shrink: 0;
+  }
+
+  .legend-dash {
+    width: 24px; height: 1px;
+    border-top: 1px dashed var(--muted);
+    flex-shrink: 0;
+  }
+
+  .legend-arrow {
+    display: flex; align-items: center;
+    gap: 2px; flex-shrink: 0;
+  }
+  .legend-arrow-line {
+    width: 20px; height: 1px;
+    background: var(--muted);
+  }
+  .legend-arrow-head {
+    border-left: 5px solid var(--muted);
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+  }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.62rem;
+    color: var(--text);
+    max-width: 240px;
+    pointer-events: none;
+    line-height: 1.7;
+    display: none;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  }
+
+  /* ── interface note badges ── */
+  .iface-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 20px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .iface-badge {
+    font-size: 0.55rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .layer {
+    animation: fadeIn 0.4s ease both;
+  }
+  .layer:nth-child(1) { animation-delay: 0.05s; }
+  .layer:nth-child(2) { animation-delay: 0.10s; }
+  .layer:nth-child(3) { animation-delay: 0.15s; }
+  .layer:nth-child(4) { animation-delay: 0.20s; }
+  .layer:nth-child(5) { animation-delay: 0.25s; }
+  .layer:nth-child(6) { animation-delay: 0.30s; }
+  .layer:nth-child(7) { animation-delay: 0.35s; }
+</style>
+</head>
+<body>
+<div id="tooltip" class="tooltip"></div>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🦜</div>
+      <div class="title-block">
+        <h1>Parakeet</h1>
+        <p>UML Component Diagram · AI-Powered Conversational Language Learning Platform</p>
+      </div>
+    </div>
+    <div class="badge">React.js · Node.js · OpenAI</div>
+  </div>
+
+  <!-- ════════════════════════════
+       LAYER: ACTORS
+       ════════════════════════════ -->
+  <div class="layer" style="border-color: rgba(113,118,148,0.3);">
+    <div class="layer-header">
+      <div class="layer-dot" style="background: var(--layer-actors)"></div>
+      <div class="layer-label">«layer» <span>Actors</span></div>
+      <div class="layer-stereotype">external users &amp; systems</div>
+    </div>
+    <div class="layer-body">
+      <div class="actor-card">
+        <span class="actor-icon">👤</span>
+        <div class="actor-name" style="color: var(--layer-actors)">Individual learner</div>
+        <div class="actor-tech">Web browser / PWA</div>
+      </div>
+      <div class="actor-card">
+        <span class="actor-icon">🏢</span>
+        <div class="actor-name" style="color: var(--layer-actors)">Corporate client</div>
+        <div class="actor-tech">B2B portal</div>
+      </div>
+      <div class="actor-card">
+        <span class="actor-icon">🛡️</span>
+        <div class="actor-name" style="color: var(--layer-actors)">System admin</div>
+        <div class="actor-tech">Admin dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector-row">
+    <div class="flow-bridge">
+      <div class="flow-tag">HTTPS · user interactions</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       LAYER: FRONTEND
+       ════════════════════════════ -->
+  <div class="layer" style="border-color: rgba(74,142,245,0.25);">
+    <div class="layer-header">
+      <div class="layer-dot" style="background: var(--layer-frontend)"></div>
+      <div class="layer-label">«layer» <span>Frontend</span></div>
+      <div class="layer-stereotype">React.js — SPA / PWA</div>
+    </div>
+    <div class="layer-body">
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Login, registration, language selection, and initial proficiency assessment (CEFR placement).">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Auth / Onboarding</div>
+        <div class="comp-tech">Login · Language select<br>CEFR placement</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Central hub: fluency scores, streak counter, AI lesson recommendations, recent conversations.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Learner dashboard</div>
+        <div class="comp-tech">Progress · Streaks<br>Recommendations</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Real-time AI conversation UI with inline grammar correction overlay and scenario selector.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">AI chat interface</div>
+        <div class="comp-tech">Conversation UI<br>Grammar overlay</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Microphone input, waveform visualizer, and pronunciation feedback display.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Voice mode</div>
+        <div class="comp-tech">Mic · Pronunciation<br>Waveform viz</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Structured lessons, interactive exercises, AI-generated quizzes, spaced-repetition cards.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Lesson modules</div>
+        <div class="comp-tech">Quizzes · SRS<br>AI quiz gen</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="Points, badge gallery, daily streak tracker, global leaderboard, and tier unlocks.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Gamification hub</div>
+        <div class="comp-tech">Badges · Leaderboard<br>XP · Streaks</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-frontend)"
+        data-tip="System health graphs, AI latency metrics, error logs, and user management panel.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Admin console</div>
+        <div class="comp-tech">Monitoring · Users<br>AI latency metrics</div>
+        <div class="comp-port"></div>
+      </div>
+
+    </div>
+
+    <!-- provided interfaces -->
+    <div class="iface-badges">
+      <span class="iface-badge" style="color: var(--layer-frontend); border-color: var(--layer-frontend)">«provided» REST/HTTPS</span>
+      <span class="iface-badge" style="color: var(--layer-frontend); border-color: var(--layer-frontend)">«provided» GraphQL</span>
+      <span class="iface-badge" style="color: var(--layer-frontend); border-color: var(--layer-frontend)">«provided» WebSocket</span>
+      <span class="iface-badge" style="color: var(--layer-frontend); border-color: var(--layer-frontend)">«provided» Audio upload</span>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector-row">
+    <div class="flow-bridge">
+      <div class="flow-tag">HTTPS · GraphQL · WebSocket · Audio upload</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       LAYER: GATEWAY
+       ════════════════════════════ -->
+  <div class="layer" style="border-color: rgba(155,107,219,0.25);">
+    <div class="layer-header">
+      <div class="layer-dot" style="background: var(--layer-gateway)"></div>
+      <div class="layer-label">«layer» <span>API Gateway &amp; Middleware</span></div>
+      <div class="layer-stereotype">routing · auth · edge</div>
+    </div>
+    <div class="layer-body">
+
+      <div class="comp" style="color: var(--layer-gateway)"
+        data-tip="Single entry point. Rate limiting, JWT validation, request routing, CORS. Powered by Amazon API Gateway.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">API gateway</div>
+        <div class="comp-tech">Amazon API Gateway<br>JWT · Rate limit · CORS</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-gateway)"
+        data-tip="Unified GraphQL schema. Handles all queries, mutations, and real-time subscriptions.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">GraphQL API</div>
+        <div class="comp-tech">Queries · Mutations<br>Real-time subscriptions</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-gateway)"
+        data-tip="Persistent WebSocket connections for streaming AI chat tokens and live corrections.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">WebSocket server</div>
+        <div class="comp-tech">Live chat · Token stream<br>Live corrections</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-gateway)"
+        data-tip="AWS CloudFront. Serves static React build and assets from global edge locations.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">CloudFront CDN</div>
+        <div class="comp-tech">AWS CloudFront<br>Edge cache · Static assets</div>
+        <div class="comp-port"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector-row">
+    <div class="flow-bridge">
+      <div class="flow-tag">service calls · stream</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       LAYER: BACKEND SERVICES
+       ════════════════════════════ -->
+  <div class="layer" style="border-color: rgba(76,175,125,0.25);">
+    <div class="layer-header">
+      <div class="layer-dot" style="background: var(--layer-backend)"></div>
+      <div class="layer-label">«layer» <span>Backend Services</span></div>
+      <div class="layer-stereotype">Node.js microservices</div>
+    </div>
+    <div class="layer-body">
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="Issues JWT tokens, manages session lifecycle, handles login/logout flows.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Auth service</div>
+        <div class="comp-tech">JWT · Sessions<br>Login/logout flow</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="User profiles, language preferences, CEFR level tracking, learning history.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">User service</div>
+        <div class="comp-tech">Profiles · CEFR<br>Language prefs</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="Core AI orchestration: prompt construction, context window management, CEFR scoring, grammar error extraction.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">AI orchestrator</div>
+        <div class="comp-tech">Prompt eng · Context mgmt<br>CEFR scoring</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="Personalised learning paths, spaced-repetition scheduling, AI quiz generation.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Curriculum service</div>
+        <div class="comp-tech">Adaptive paths · SRS<br>AI quiz gen</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="Awards XP, unlocks badges, updates streak counters, computes leaderboard rankings.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Gamification service</div>
+        <div class="comp-tech">XP · Badges · Streaks<br>Leaderboard ranks</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-backend)"
+        data-tip="Computes fluency scores, vocabulary growth, grammar accuracy, conversation error logs.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">Analytics service</div>
+        <div class="comp-tech">Fluency scores · Errors<br>Vocab growth</div>
+        <div class="comp-port"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- connector row to AI + Data -->
+  <div class="connector-row">
+    <div class="flow-bridge">
+      <div class="flow-tag">API call / inference</div>
+      <div class="flow-tag">SQL / cache</div>
+      <div class="flow-tag">metrics</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       AI ENGINE + DATA LAYER (side by side)
+       ════════════════════════════ -->
+  <div class="side-by-side">
+
+    <!-- AI Engine -->
+    <div class="layer" style="border-color: rgba(232,83,74,0.25);">
+      <div class="layer-header">
+        <div class="layer-dot" style="background: var(--layer-ai)"></div>
+        <div class="layer-label">«layer» <span>AI Engine</span></div>
+        <div class="layer-stereotype">OpenAI</div>
+      </div>
+      <div class="layer-body">
+
+        <div class="comp" style="color: var(--layer-ai)"
+          data-tip="Powers real-time multi-turn conversation, grammar correction, and scenario roleplay via OpenAI GPT-4.">
+          <div class="comp-stereotype">«component»</div>
+          <div class="comp-name">OpenAI GPT-4</div>
+          <div class="comp-tech">Conversational AI<br>Grammar correction<br>Scenario roleplay</div>
+          <div class="comp-port"></div>
+        </div>
+
+        <div class="comp" style="color: var(--layer-ai)"
+          data-tip="Domain fine-tuned on curated language-learning dialogues. CEFR A1–C2 aligned, 12 languages.">
+          <div class="comp-stereotype">«component»</div>
+          <div class="comp-name">Fine-tuned LLM</div>
+          <div class="comp-tech">CEFR A1–C2 aligned<br>12 languages<br>Custom dialogues</div>
+          <div class="comp-port"></div>
+        </div>
+
+        <div class="comp" style="color: var(--layer-ai)"
+          data-tip="OpenAI Whisper. Transcribes learner voice input for AI Orchestrator processing.">
+          <div class="comp-stereotype">«component»</div>
+          <div class="comp-name">Whisper STT</div>
+          <div class="comp-tech">OpenAI Whisper<br>Speech-to-text<br>Voice transcription</div>
+          <div class="comp-port"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Data Layer -->
+    <div class="layer" style="border-color: rgba(240,160,48,0.25); min-width: 220px;">
+      <div class="layer-header">
+        <div class="layer-dot" style="background: var(--layer-data)"></div>
+        <div class="layer-label">«layer» <span>Data Layer</span></div>
+        <div class="layer-stereotype">persistence</div>
+      </div>
+      <div class="layer-body" style="flex-direction: column;">
+
+        <div class="comp" style="color: var(--layer-data)"
+          data-tip="Primary relational datastore. All users, progress records, conversation sessions, curriculum data.">
+          <div class="comp-stereotype">«component»</div>
+          <div class="comp-name">PostgreSQL</div>
+          <div class="comp-tech">Users · Progress<br>Sessions · Curriculum</div>
+          <div class="comp-port"></div>
+        </div>
+
+        <div class="comp" style="color: var(--layer-data)"
+          data-tip="Session cache, rate-limit counters, leaderboard scores, and conversation context cache.">
+          <div class="comp-stereotype">«component»</div>
+          <div class="comp-name">Redis</div>
+          <div class="comp-tech">Session cache<br>Leaderboard · Rate limit</div>
+          <div class="comp-port"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- connector -->
+  <div class="connector-row">
+    <div class="flow-bridge">
+      <div class="flow-tag">hosted on / metrics</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       LAYER: CLOUD INFRA
+       ════════════════════════════ -->
+  <div class="layer" style="border-color: rgba(48,184,168,0.25);">
+    <div class="layer-header">
+      <div class="layer-dot" style="background: var(--layer-infra)"></div>
+      <div class="layer-label">«layer» <span>Cloud Infrastructure</span></div>
+      <div class="layer-stereotype">AWS</div>
+    </div>
+    <div class="layer-body">
+
+      <div class="comp" style="color: var(--layer-infra)"
+        data-tip="AWS EKS Kubernetes cluster. Hosts and auto-scales all backend microservice containers.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">AWS EKS</div>
+        <div class="comp-tech">Kubernetes cluster<br>Container orchestration<br>Auto-scaling</div>
+        <div class="comp-port"></div>
+      </div>
+
+      <div class="comp" style="color: var(--layer-infra)"
+        data-tip="Monitors system uptime, AI inference latency, error rates, and resource utilisation. Sends alerts.">
+        <div class="comp-stereotype">«component»</div>
+        <div class="comp-name">CloudWatch</div>
+        <div class="comp-tech">Uptime · AI latency<br>Error rates · Alerts<br>Resource utilisation</div>
+        <div class="comp-port"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       LEGEND
+       ════════════════════════════ -->
+  <div class="legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-grid">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-actors)"></div>Actors layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-frontend)"></div>Frontend layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-gateway)"></div>Gateway layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-backend)"></div>Backend layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-ai)"></div>AI engine layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-data)"></div>Data layer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--layer-infra)"></div>Infrastructure layer</div>
+      <div class="legend-item"><div class="legend-symbol"></div>Provided interface (lollipop)</div>
+      <div class="legend-item"><div class="legend-dash"></div>Layer boundary</div>
+      <div class="legend-item"><div class="legend-arrow"><div class="legend-arrow-line"></div><div class="legend-arrow-head"></div></div>«uses» dependency</div>
+      <div class="legend-item" style="color: var(--muted); font-style: italic">Hover over any component for details</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const tip = document.getElementById('tooltip');
+  document.querySelectorAll('[data-tip]').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      tip.style.display = 'block';
+      tip.textContent = el.dataset.tip;
+      const x = e.clientX + 16;
+      const y = e.clientY - 8;
+      tip.style.left = Math.min(x, window.innerWidth - 260) + 'px';
+      tip.style.top  = y + 'px';
+    });
+    el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  });
+</script>
+</body>
+</html>
